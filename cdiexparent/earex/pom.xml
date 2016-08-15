@@ -1,0 +1,71 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+        <groupId>com.audhut</groupId>
+  			<artifactId>cdiexparent</artifactId>
+  			<version>1.0-SNAPSHOT</version>
+  </parent>
+
+  <groupId>com.audhut</groupId>
+  <artifactId>earex</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>ear</packaging>
+
+  <name>earex</name>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-ear-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+            <version>6</version>
+            <defaultLibBundleDir>lib</defaultLibBundleDir>
+            <modules>
+            	<webModule>
+              	<groupId>com.audhut</groupId>
+              	<artifactId>cdiex</artifactId>
+              	<contextRoot>/cdiex</contextRoot>
+            	</webModule>
+            	<ejbModule>
+              	<groupId>com.audhut</groupId>
+              	<artifactId>ejbex</artifactId>
+              </ejbModule>
+          	</modules>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <dependencies>
+    <dependency>
+      <groupId>com.audhut</groupId>
+      <artifactId>cdiex</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>com.audhut</groupId>
+      <artifactId>ejbex</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <type>ejb</type>
+    </dependency>
+  </dependencies>
+
+</project>

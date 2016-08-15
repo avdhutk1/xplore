@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<beans xmlns="http://java.sun.com/xml/ns/javaee"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee"	
+	version="1.1">	
+	
+	<alternatives>
+        <class>com.audhut.cdi.service.impl.ProductServiceImpl2</class>
+    </alternatives>
+    
+    <decorators>
+     <class>com.audhut.cdi.decorator.PriceDiscounter</class>
+    </decorators>
+    
+</beans>
