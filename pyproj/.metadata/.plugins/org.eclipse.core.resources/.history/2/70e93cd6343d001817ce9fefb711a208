@@ -1,0 +1,153 @@
+'''
+Created on 04-Apr-2018
+
+@author: avdhut
+'''
+'''
+1. function definition can be done in two ways - def and lambda:
+def creates an object and assigns the function name
+def can be defined in-line in an if statement
+def is created the first time it is invoked
+lamda also creates an object but returns it as a result. It is used in-line where def cannot be defined
+2. two ways to send result back to caller - return and yield
+yield returns the result but remembers where it left off. i.e used to maintain state in the func.
+The state is suspended and resumed later to return a series of results later
+3. scope - two ways besides default- global and non-local
+by default all names are local to the func
+global assign a name in the enclosing module
+nonlocal is in v3.0 assigns a name in the scope of def - but can retain state - between successive calls
+4. arguments
+arguments are passed by reference
+arguments are passed by position - unless you specify. i.e you can specify by -x=someval
+arbitrary number of args can be passed by *pargs or **kargs
+return values are not declared
+################
+def is a true executable statement. unlike other lang, def is not evaluated before. It is evaluated at runtime
+this means it is the same as = statement. here a function object is created with a name.
+The statements inside def are also evaluated later
+Because of this you can have a def inside an if statement
+if x:
+    def func()
+else:
+    def func()
+Thus you can have different implementation depending on the logic
+'''
+def times(x, y):
+    return x*y
+#call the function now
+rv = times(2,3)
+print('func called with number =>', rv)
+rv = times('aa',3)
+print('func called with string =>', rv)
+#in python, you can achieve polymorphism as there is no strong typing. Args are matched and if they support
+#the * expression,it will execute. if not, you get an error.
+'''
+########################
+Scopes
+If a variable is defined in a module, it is 'global', i.e only global to that module.i.e in a single file. There is no 'total global' in python
+A variable defined or assigned in a def is local to that func
+If a variable is assigned in the enclosing def, it is 'nonlocal' to nested func
+Important to note is that in python, assignments make that variable local
+But if you do in-place changes, they are not local. see examples below.
+'''
+var1='aaa' #is a global scope
+def testglobal():
+    #print('check to see if var var1 is global =>', var1) # var1 is now global and the func sees global value 
+    var1='bbb' #because it is assigned it is now local  
+    print('check to see if var var1 has become local after assignment =>', var1)
+testglobal()
+print('printing a global scope var after func call=>', var1) # still sees 'aaa'
+var2=['aaa', 'bbb']
+def testglobal2():
+    var2.append('ccc')
+    print('check to see if var var1 has become local after modification =>', var2)
+testglobal2()
+print('printing a global scope var after func call with modification =>', var2) # can see the in-place modification done by func
+def testglobal3(var3):
+    var3.append('ddd')
+    print('check to see if var var1 has become local after modification =>', var2)
+testglobal3(var2)
+print('printing a global scope var after func call with modification =>', var2) #ref points to the same obj
+def testglobal4(var3):
+    var4=['xxx']
+    var3=var4 #now var2 is local, outside variables will not see this reference
+    var3.append('yyy') 
+    print('check to see if var var2 has become local after modification =>', var2)
+    print('check to see if var var3 is local after assignment =>', var3)
+testglobal4(var2)
+print('printing a global scope var after func call with modification =>', var2) #ref points to the same obj
+'''
+when you use an unqualified name in python, it searches upto 4 scopes - LEGB
+local - see if it is assigned locally. Thus if you assign any variable it becomes local
+Enclosing - looks for in enclosing def or lambda
+Global - looks into the module
+Built-in - looks for built in variables
+Thus when you modify a variable in a func, it is in-place modification and affects the module also
+But if you assign it and then modify, it is local to that func
+However if you define a variable as 'global' inside a func it affects module also
+Care should be taken that you do not name the variables with the builtin variable names
+In python2, these variables are under __builtin__
+In python3, you have to import __builtin__ 
+'''
+#global keyword - makes the variable global. i..e becomes part of the enclosing module
+varx=88
+yy=7
+zz=10
+def func():
+    global varx #makes this variable global, i.e the variable from enclosing module is referred
+    varx=99
+    global vx
+    vx= yy+zz #yy and zz are found by legb rule and are not local as they are not assigned. They remain global
+    
+func() # call the function to prove this
+print('check global keyword has changed the variable =>', varx)
+print('check global keyword inside a func makes it accessible outside =>', vx)
+'''
+If you import a module and change its variable with global keyword inside a func, it affects
+all other module that import the module. Hence should be careful while using global keyword
+'''
+#Nested functions - follow the same LEGB principle for defining variable scope. 
+#If the nested function does not find the assignment in its block, it looks for the enclosing func
+nvar=77
+def ofun():
+    nvar=88  # here it becomes local due to assignment
+    def ifun():  #this is legal as you can define a func within another. It just makes a object with the fucn name
+        print('check the scope of nested func =>', nvar)
+    return ifun
+    #ifun()   # uncomment this and comment the return to get the same result 
+rfun = ofun()
+rfun()
+#The above func is an example of closure. The returned func retains the variables in the enclosing func
+#you can use this as a factory where different inputs can be speciifed and stored inside a func.
+def efun(cvar):
+    def  cfun(ivar):
+        return cvar*ivar  #closure - uses the var in the enclosing func
+    return cfun
+clfun = efun(40) #closure func returned with the input of enclosing
+rt = clfun(10)  # closure func retains the enclosing variable
+print('value returned by closure =>', rt )
+clfun =efun(50)
+rt = clfun(20)
+print('value returned by closure =>', rt )
+# the above can also be returned using lambda keyword    
+def outfunc(x):
+    return lambda y:y**x    
+h = outfunc(2)
+z= h(3)
+print('example of a lambda =>', z)
+
+
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+

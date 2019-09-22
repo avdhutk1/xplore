@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vi: set et smarttab sw=4 tabstop=4: -->
+<!--
+Copyright © 2017 Copyright (c) 2015 Yoyodyne, Inc and others. All rights reserved.
+
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License v1.0 which accompanies this distribution,
+and is available at http://www.eclipse.org/legal/epl-v10.html
+-->
+<features name="odl-examples-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
+  <repository>mvn:org.opendaylight.yangtools/features-yangtools/{{VERSION}}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-mdsal/{{VERSION}}/xml/features</repository>
+  <repository>mvn:org.opendaylight.mdsal.model/features-mdsal-model/{{VERSION}}/xml/features</repository>
+  <repository>mvn:org.opendaylight.netconf/features-restconf/{{VERSION}}/xml/features</repository>
+  <repository>mvn:org.opendaylight.dluxapps/features-dluxapps/{{VERSION}}/xml/features</repository>
+  <feature name='odl-examples-api' version='${project.version}' description='OpenDaylight :: examples :: api'>
+    <feature version='${mdsal.model.version}'>odl-mdsal-models</feature>
+    <bundle>mvn:com.audhut.odl/examples-api/{{VERSION}}</bundle>
+  </feature>
+  <feature name='odl-examples' version='${project.version}' description='OpenDaylight :: examples'>
+    <feature version='${mdsal.version}'>odl-mdsal-broker</feature>
+    <feature version='${project.version}'>odl-examples-api</feature>
+    <bundle>mvn:com.audhut.odl/examples-impl/{{VERSION}}</bundle>
+  </feature>
+  <feature name='odl-examples-rest' version='${project.version}' description='OpenDaylight :: examples :: REST'>
+    <feature version="${project.version}">odl-examples</feature>
+    <feature version="${restconf.version}">odl-restconf</feature>
+  </feature>
+  <feature name='odl-examples-ui' version='${project.version}' description='OpenDaylight :: examples :: UI'>
+    <feature version="${project.version}">odl-examples-rest</feature>
+    <feature version="${restconf.version}">odl-mdsal-apidocs</feature>
+    <feature version="${dluxapps.version}">odl-dluxapps-yangman</feature>
+  </feature>
+  <feature name='odl-examples-cli' version='${project.version}' description='OpenDaylight :: examples :: CLI'>
+    <feature version="${project.version}">odl-examples</feature>
+    <bundle>mvn:com.audhut.odl/examples-cli/{{VERSION}}</bundle>
+  </feature>
+
+</features>

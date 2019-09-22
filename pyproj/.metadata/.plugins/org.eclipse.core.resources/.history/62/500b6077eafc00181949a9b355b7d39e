@@ -1,0 +1,40 @@
+'''
+Created on 07-Dec-2018
+
+@author: avdhut
+'''
+'''
+Exceptions
+There are 4 statements related to exceptions
+try/except - catch and recover from exceptions
+try/finally - perform cleanup actions, whether exceptions occur or not
+raise - trigger an exception
+assert - conditionally trigger an exception
+with/as - implement context managers, close resources
+'''
+
+def fetcher(obj, index):
+    return obj[index]
+
+#this catches a error and just prints it
+# but if the exception is not raised, the program continues at the next statement after the try block
+x = 'hello'
+try:
+    fetcher(x,6)
+except IndexError:
+    print('index is out of bounds')
+print('continuing after catching exception') # this should be in line with the try clause
+
+#raise exception using a raise clause
+try:
+    raise IndexError
+except IndexError:
+    print('caught the raised error')
+'''
+Built in and User defined exceptions
+The above exception, IndexError,  was a built in exception
+
+    
+    
+    
+    

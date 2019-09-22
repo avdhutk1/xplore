@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans.xsd
+          http://www.springframework.org/schema/context
+          http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- to support annotation you need to include the below tag. component-scan scans the code for
+annotations like @Component, @Controller, @Repository, @Service, @Inject, @Autowired, etc -->
+      <!--<context:component-scan
+               base-package="com.audhut"/>-->
+
+    <!-- <context:annotation-config/> --> <!-- used if beans annotation with PostConstruct and PreDestroy annotations -->
+
+    <!-- you can also exclude or include packages using filters
+    you can write your own filter that implements org.sprin.....TypeFilter
+    the below example excludes all types - classes or interfaces that are assignable
+    <context:component-scan
+            base-package="com.audhut.spring5ex.intf">
+        <context:exclude-filter type="assignable"
+                                expression="com.audhut.NotAService"/>
+    </context:component-scan>
+    -->
+<!-- uncomment below to check property injection. also remove autowired annotation from setter-->
+<!--
+        <bean id="renderer" class="com.audhut.spring5ex.impl.MessageRendererImpl">
+              <property name="MessageProvider" ref="provider"/>
+        </bean>
+
+        <bean id="provider" class="com.audhut.spring5ex.impl.MessageProviderImpl"/>
+-->
+    <!--
+    injection is byName, byType, constructor.Default is byTpe or constructor. In constructor, usually a
+    default constructor is called. But if you have overloaded constructor, Spring calls the one with most params
+    If it does not find the beans for all params of the constructor, it throws an error
+    one example from the book is given below
+    lazy-init tells Spring to initialize bean only when requested and not at startup.use can also use @Lazy annotation
+    In the below case, the target bean has overloaded constructors and setters and getters also
+    The byName only injects one bean which is present
+    byType injects all beanTypes it finds
+    contructor only calls the one with the most overloaded params
+
+    <bean id="fooOne" class="com.apress.prospring5.ch3.xml.Foo"/>
+    <bean id="barOne" class="com.apress.prospring5.ch3.xml.Bar"/>
+    <bean id="targetByName" autowire="byName"
+            class="com.apress.prospring5.ch3.xml.Target" lazy-init="true"/>
+    <bean id="targetByType" autowire="byType"
+            class="com.apress.prospring5.ch3.xml.Target" lazy-init="true"/>
+    <bean id="targetConstructor" autowire="constructor"
+            class="com.apress.prospring5.ch3.xml.Target" lazy-init="true"/>
+
+       -->
+    <!--
+     To call post construct method use init-method attribute of bean
+     <bean id="singerOne"
+        class="com.apress.prospring5.ch4.Singer"
+        init-method="init" p:name="John Mayer"  p:age="39"/>
+    -->
+
+    <!-- example of a bean creation using factory bean and factory method
+    In this example the factory method is producing a different bean
+    i.e. it is non-static method, hence you need to specify factory-bean and factory-method
+    -->
+<!--
+    <bean id = "shaDigestFactory" class="com.audhut.spring5ex.impl.MessageDigestFactory" >
+        <property name="algorithmName" value="SHA1"/>
+    </bean>
+    <bean id = "defaultDigestFactory" class="com.audhut.spring5ex.impl.MessageDigestFactory" />
+    <bean id="shaDigest" factory-bean="shaDigestFactory" factory-method="getInstance" />
+    <bean id="defaultDigest" factory-bean="defaultDigestFactory" factory-method="getInstance" />
+    <bean id="messageDigester" class="com.audhut.spring5ex.impl.MessageDigester">
+        <property name="digest1" ref="shaDigest" />
+        <property name="digest2" ref="defaultDigest"/>
+    </bean>
+-->
+
+    <bean id="orderProc" class="com.audhut.spring5ex.impl.OrderProcessor" factory-method="getInstance">
+      <!--  <constructor-arg ref="orch"/> -->
+           </bean>
+    <bean id="orch" class="com.audhut.spring5ex.impl.Orchestrator"/>
+
+    <!--
+    for setting constructor args, you use the <constructor-arg ref="orch"/> tag
+    you can also set a list by using <list> tag as given below
+      <constructor-arg>
+        <list>
+          <ref bean="sgtPeppers" />
+          <ref bean="whiteAlbum" />
+          ...
+        </list>
+      </constructor-arg>
+
+     In case the list consist of primitives and you need to set values then you can do
+
+      <constructor-arg>
+        <list>
+          <value="sgtPeppers" />
+          <value="whiteAlbum" />
+          ...
+        </list>
+      </constructor-arg>
+
+      similarly for property setting:
+      <property name="tracks">
+         <list>
+            <value>Sgt. Pepper's Lonely Hearts Club Band</value>
+         </list>
+       </property>
+
+       for set use the tag <set>
+
+        using the c and p namespace you can make constructor and property setting more succint but you cannot do it for a list
+
+        <bean id="cdPlayer" class="soundsystem.CDPlayer"
+                p:compactDisc-oun -{property-name}-ref
+
+         Another better efficient way where you can reuse the list or set in multiple classes by using the 'util' namespace
+         you first define the list using the util namespace and then refer to it in a class
+
+                <util:list id="trackList">
+                    <value>Sgt. Pepper's Lonely Hearts Club Band</value>
+                    <value>With a Little Help from My Friends</value>
+                    .....
+                </util:list>
+
+                <bean id="compactDisc" class="soundsystem.BlankDisc"
+                          p:tracks-ref="trackList" />
+
+          In the above example, the list is defined separately and not in-line to the bean
+          in this way, the list can be used to inject in different beans
+
+          The util namepsace can also be used to define static constants, map, properties , etc
+          <util:constant>	References a public static field on a type and exposes it as a bean
+          <util:list>	Creates a bean that is a java.util.List of values or references
+          <util:map>	Creates a bean that is a java.util.Map of values or references
+          <util:properties>	Creates a bean that is a java.util.Properties
+          <util:property-path>	References a bean property (or nested property) and exposes it as a bean
+          <util:set>	Creates a bean that is a java.util.Set of values or references
+
+         -->
+    <!--
+    You can have multiple xml files - one for each module. Better way is to have one root xml that imports
+    all the other xml's
+
+     <import resource="cd-config.xml" />
+
+    mixing Java and xmlconfig's
+    If you have some config in java class you can use it in the XML also by adding a 'bean' element to the xml
+
+    <bean class="soundsystem.CDConfig" />
+    Here the class CDconfig has java configuration and the annotation
+    -->
+    <!--
+    you can set profiles for beans using the beans tag and define the bean inside that tag
+    <beans profile="dev">
+        <bean id="datasource"
+              class="com.audhut.connector.datasource"
+              p:url="xxx"
+              />
+     </beans>
+     example of activating the  profile in web.xml
+        <context-param>
+            <param-name>spring.profiles.default</param-name>
+            <param-value>dev<</param-value>
+         </context-param>
+         and in dispatcher servlet
+         <servlet>
+            <init-param>
+                <param-name>spring.profiles.default</param-name>
+                <param-value>dev<</param-value>
+             </init-param>
+                .....
+    -->
+
+    <!--
+    Scoping for session and request beans
+    To inject the session and request scope beans as proxy, you need to define as follows:
+
+        <bean id="cart"
+                class="com.myapp.ShoppingCart"
+                scope="session">
+        <aop:scoped-proxy />
+        </bean>
+
+        you need to define aop namespace and as scoped-proxy tag
+        by default, spring uses cgilib to generate a proxy target class
+        if you need a interface based proxy you can define the tag as
+
+        <aop:scoped-proxy proxy-target-class="false"/>
+    -->
+
+    <!--
+    Property values for dynamic value injection
+    to inject a value from a property file you need to use the property placeholder
+
+    <bean id="blankdisc" class="com.audhut.spring5ex.impl.BlankDisc"
+        c:_title="${disc.title}"
+        c:_artist="${disc.artist}" />
+
+       you also need to define the tag
+      <context:property-placeholder />
+      to use property-placeholders
+     -->
+
+
+</beans>
