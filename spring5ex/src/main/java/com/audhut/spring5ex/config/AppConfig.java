@@ -34,7 +34,7 @@ import org.springframework.core.env.Environment;
  */
 
 /**
- * Spring manages the lifecycle of a bena in the following way
+ * Spring manages the lifecycle of a bean in the following way
  * 1. Scans the beans, initiates them and injects properties
  * 2. Check if bean is spring aware. If it is calls setBeanName,setBeanClasslaoder, setApplicationContext
  * 3. Calls lifecycle callbacks. @PostConstruct, afterPropertySet, @Bean(initMethod=..) - one of these is called

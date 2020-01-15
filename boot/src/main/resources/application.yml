@@ -1,0 +1,32 @@
+interfaces:
+  ordering:
+    url: https://com.audhut/ordering
+    name: Ordering interface
+  inventory:
+    url: https://com.audhut/inventory
+    name: Inventory interface
+
+externalSystems:
+  servers:
+    - com.audhut.ordering
+    - com.audhut.inventory
+
+acme:
+  enabled: true
+  remote-address: 192.168.1.1
+  security:
+    username: 'secureuser'
+    password: 'encrypt'
+    ssl:
+      enabled: false
+      protocol: http
+      [\privatekey]: 0xffasrt
+      [public-key]: 0xaaff87d
+    roles:
+      - USER
+      - ADMIN
+  customer-types:
+    - type: residence
+      description: 'staying in residence'
+    - type: business
+      description: 'business customer'
