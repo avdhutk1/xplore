@@ -16,6 +16,9 @@
 
 	<properties>
 		<java.version>1.8</java.version>
+		<!--<swagger-annotations-version>1.5.8</swagger-annotations-version>-->
+		<swagger-annotations-version>2.0.8</swagger-annotations-version>
+		<springfox-version>2.8.0</springfox-version>
 	</properties>
 
 	<dependencies>
@@ -29,7 +32,66 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!--START - these dependencies are required by codegen plugin -->
+		<!-- the swagger annotation dependency gives an error for openapi plugin, hence use parser dependency -->
+		<!--<dependency>
+			<groupId>io.swagger</groupId>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>${swagger-annotations-version}</version>
+		</dependency> -->
+
+		<dependency>
+			<groupId>io.swagger.parser.v3</groupId>
+			<artifactId>swagger-parser</artifactId>
+			<version>2.0.20</version>
+		</dependency>
+
+		<!--SpringFox dependencies -->
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>${springfox-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>${springfox-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.2.11</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>jackson-databind-nullable</artifactId>
+			<version>0.1.0</version>
+		</dependency>
+		<!-- Bean Validation API support -->
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+		</dependency>
+
+		<!--END - end of the dependencies for codegen plugin -->
+
+		<!-- dependency for generating docs and UI-->
+		<!-- compile scope is used if you want to generate the json without starting the server -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.4.3</version>
+			<scope>compile</scope>
+		</dependency>
+
 	</dependencies>
+
 
 	<build>
 		<plugins>
@@ -37,7 +99,109 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<!-- plugin for generation code.Only interface is generated here -->
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>4.3.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>./src/main/resources/petstore.yml</inputSpec>
+							<generatorName>spring</generatorName>
+							<configOptions>
+								<!--<sourceFolder>swagger</sourceFolder> -->
+								<java8>true</java8>
+								<!--this is required to generate only interfaces and not controller implementation -->
+								<interfaceOnly>true</interfaceOnly>
+								<basePackage>com.avdhut.boot</basePackage>
+								<configPackage>
+									com.avdhut.boot.config
+								</configPackage>
+								<apiPackage>
+									com.avdhut.boot.endpoint
+								</apiPackage>
+								<modelPackage>
+									com.avdhut.boot.domain
+								</modelPackage>
+								<invokerPackage>
+									com.avdhut.boot
+								</invokerPackage>
+								<groupId>${project.groupId}</groupId>
+								<artifactId>${project.artifactId}</artifactId>
+								<artifactVersion>${project.version}</artifactVersion>
+								<artifactName>${project.name}</artifactName>
+								<parentGroupId>org.springframework.boot</parentGroupId>
+								<parentArtifactId>spring-boot-starter-parent</parentArtifactId>
+								<parentVersion>2.1.9.RELEASE</parentVersion>
+							</configOptions>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--below two plugin are required only for generating the docs -->
+			<!-- The spring-boot plugin is configured to generate the json doc during integration phase-->
+			<!-- It has to be configured with the doc plugin given below -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>2.3.1.RELEASE</version>
+				<executions>
+					<execution>
+						<id>pre-integration-test</id>
+						<goals>
+							<goal>start</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>post-integration-test</id>
+						<goals>
+							<goal>stop</goal>
+						</goals>
+					</execution>
+					<!-- use this only if you do not use  spring-boot-starter-parent as the parent pom -->
+					<!--<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+						<configuration>
+							<mainClass>your.main.class.MainClass</mainClass>
+						</configuration>
+					</execution> -->
+				</executions>
+				<!--this is required if you have multiple BootApplication classes. probably generated by codegen -->
+				<configuration>
+					<mainClass>com.avdhut.boot.BootApplication</mainClass>
+				</configuration>
+			</plugin>
+
+			<!-- plugin to generate the json doc during integration phase-->
+			<!-- configuration like filename, path can be specified as shown below-->
+			<plugin>
+				<groupId>org.springdoc</groupId>
+				<artifactId>springdoc-openapi-maven-plugin</artifactId>
+				<version>1.0</version>
+				<executions>
+					<execution>
+						<phase>integration-test</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<apiDocsUrl>http://localhost:8080/v3/api-docs</apiDocsUrl>
+					<outputFileName>orderMang.yaml</outputFileName>
+					<outputDir>${project.build.directory}/orderMang-spec</outputDir>
+				</configuration>
+			</plugin>
 		</plugins>
+
 	</build>
 
 </project>

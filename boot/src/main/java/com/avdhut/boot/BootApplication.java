@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Import;
  * You can either use one of @SpringBootApplication or the @EnableAutoConfiguration with the other annotation
  * This is useful if you want to disable/exclude some autoconfig libraries. You can do it by:
  * @EnableAutoConfiguration(exclude=(DatSourceAutoConfiguration.class))
- * You can also use the 'exclude' expresssion with the @SpringBootApplication annotation
+ * You can also use the 'exclude' expression with the @SpringBootApplication annotation
  * Spring and its projects like SpringCore, SpringData, SpringCloud, Springtransaction, etc provide annotation like
  * @Enable<Technology> - eg @EnableTransactionManagement, @EnableIntegration, etc. This is on Spring principle of
  * convention over configuration
@@ -119,13 +119,41 @@ import org.springframework.context.annotation.Import;
  * You can directly inject the values from application.properties using @Value
  * Refer to AppConfig class for examples
  * If you want to bind properties to a Bean use @ConfigurationProperties
- * Refer to AcmeProperties bena which has properties injected from application.yml
+ * Refer to AcmeProperties bean which has properties injected from application.yml
  * It also has a nested bean, Security, that has list and map being injected
  * Binding on Static properties is not supported
  * In such cases, the beanname is <prefix>-<fqdn> - for eg. acme-com.audhut.boot.domain.AcmeProperties
  * Refer to Acme properties for how binding to bean and nested bean is done
  * Also refer to Security bean on how mapping to lists and maps is done
+ * Conversion
+ * Spring converts the application configuration to the class that is required
+ * In case of Time, it supports java.time.Duration property. You can do
+ * @DurationUnit(ChronoUnit.SECONDS)
+ * private Duration sessionTimeout = Duration.ofSeconds(30); if you have a property sessionTimeout defined
+ * similarly, it also supports datasize value type
+ * @DataSizeUnit(DataUnit.MEGABYTES)
+ * private DataSize bufferSize = DataSize.ofMegabytes(2);
+ * private DataSize sizeThreshold = DataSize.ofBytes(512);
+ * @Value does not support relaxed binding. Hence, it is not a good candidate for env variables. It is recommended
+ * to group together variables in a pojo and use @Configurationproperties
  *
+ *Logging
+ * Springboot uses Commons logging as the default logger. If you use 'starters', the default logging lib
+ * used is logback
+ * By default, error, warn and info levels are logged. If you want debug level, specify debug=true in application.properties
+ * or start the app with --debug flag
+ * You can set some properties using logging.* in application.properties. for eg.
+ * if you want to write to a file, set application.file=mylog.log or application.path=/var/log
+ * You can set logging level for specific loggers using logging.level.<logger>=<level>
+ * for eg. logging.level.root=error
+ * logging.level.com.audhut.service=debug
+ * you can also specify env variable application_json
+ * You can also group different loggers together using
+ * logging.group.tomcat=org.apache.catlina,org.apache.tomcat, ...
+ * If you want custom config, you have to use logback-spring.xml file. The logback.xml does not work as logger is initialized
+ * before spring app context.hence it is recommended to use <loglib>-spring.xml
+ * You can add MDC or other ad-hoc content using LOG_LEVEL_PATTERN or logging.level.pattern.
+ * for eg. logging.level.pattern=user:%X{user} %5p contains a mdc 'user'
  *
  */
 

@@ -30,3 +30,10 @@ acme:
       description: 'staying in residence'
     - type: business
       description: 'business customer'
+  device-types:
+      vendor1:
+        name: fortinet
+        description: firewall
+      vendor2:
+        name: versa
+        description: sdwan
