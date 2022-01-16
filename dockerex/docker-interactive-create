@@ -1,0 +1,56 @@
+To create a docker image interactively
+
+1. Start with a base image
+$ docker container run -it --name myimage alpine /bin/sh
+This takes the base image of alpine and executes the bash
+
+2. Make the change you want. i.e install packages that you may want
+for eg. If you want to install ping tool
+$ apk update && apk install add iputils
+
+this will install the ping tool and you will be able to use ping
+
+3. Check the difference in the container
+$ docker container ls -a | grep myimage
+will give you the image is in local system
+
+$ docker container diff myimage
+This will give the list of modifications done to the filesystem
+eg:
+C /bin
+C /bin/ping
+A /root/.ash_history
+
+The prefixes are :
+C - for changed
+A - for added
+D- for deleted
+
+4. Commit the image
+$ docker container commit myimage my-alpine
+This will give a hash
+sha256 : 44sss.....
+Verify this with
+$ docker image lsy
+this will have the image name as my-alpine with tag=latest
+
+You can also sign the container with the authour name and a commit message when committing
+$ docker container commit -a "@avdhut" -m "added ping tool" myimage my-alpine
+-a option is the authors signature
+-m is the committ message
+This is a good practice
+
+
+you can see the history also. This gives you all the layers of the image
+$ docker image history my-alpine
+
+##############
+When the new container is created, it inherits the options that were set like env variable, entrypoints, etc
+for eg
+$ docker container run --name myimage --entrypoint /bin/sh -e ENV_VAR1="abc"
+If you commit the above to a new image and run it, it will run the entrypoint and you can also print the env var
+
+You should always set the entrypoint. Otherwise the container will only start and exit
+
+If you want to create a copy of an image, you only need to create a new tag or a new repo like this
+$ docket tag avdhutk/myfirstrepo:mytag avdhutk/ubuntu

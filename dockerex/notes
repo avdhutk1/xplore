@@ -1,0 +1,364 @@
+Container architecture
+lowest level -> Linux kernel with Namespaces (pid, net, ipc, mnt, ufs), control groups (cgroups),
+Layer capabilities(union file system (ufs), device mapper)
+cgroups prevent noisy neigbours - processes that can hog the cpu and memory. cgroups allow to restrict how much
+cpu/memory a container can use
+
+middle layer - container runtime --> containerd and runc are runtime processes.
+runc is a low level process while containerd is a higher level
+containerd is responsible for lifecycle of the containers - pulls the image from registry, creates, runs and destroys
+
+top level - docker engine runs on top
+it includes docker rest api - used by docker cli and other value added libraries
+
+Namespaces - are abstraction of the global resources such as filesystem, users, network access, process tree
+Each namespace has an illusion that it owns the filesystem but in reality, it will be only part of the host system
+similarly, each namespace will have a PID=1 but the same process will have a different pID when viewed from the host.
+i.e.it is just part of the process tree that the namspaces is able to see
+
+Cgroups - are used to limit,manage and isolate resource usage like cpu, ram, network bandwidth from different containers
+and avoid noisy neighbour problem
+
+UnionFS - forms the backbone for creating images. It allows files and direcotries of distinct file system to be overlaid
+to form a single coherant file system
+
+Runc - it is the container runtime. Tool for running and creating containers as part of OCI - open container initiative
+mainly responsible for creating namespace, cgroups, etc
+
+containerd - higher level layer that builds on runc and responsible for managing images - transfer and storage, container
+execution and manages lifecycle of container. it is reference implementation of OCI - open container initiative
+other implementations are rkt,lxd
+######
+#create command generates an ID but the container is not started
+#useful when you want to delay the start
+docker create nginx
+#docker run command starts the container
+docker container run -d --name <specified name> -p 8080:80 <image with tag>
+eg: docker container run -d --name nginx -p 8080:80 nginx:alpine
+
+export CONTAINER_ID = $(docker container ls | grep quotes | awk '{print $1}')
+docker container stop $CONTAINER_ID
+docker run -d  alpine# starts the container in the background / detached mode
+####
+docker states - created, running, restarting, paused, removing, exited
+####
+to inspect the docker
+$ docker container inspect <container name or id>
+$ docker container inspect -f "{{json .state}}" <container name or id> | jq
+-f is the filter, jq is the tool for formatted output
+####
+to login to the container and execute command
+docker container exec -i -t <container name> <command>
+eg: docker container exec -i -t <container name> /bin/sh
+
+you can also attach to the container and get the stdoutput on terminal
+docker container attach <name>
+Now if in another terminal you run commands on that container, you will see the logs on the previous terminal
+for eg:
+docker container run -d --name nginx -p 8080:80 nginx:alpine
+docker container attach nginx
+in another terminal : curl -4 localhost:8080 ==> this will generate nginx logs in the previous terminal that was attached
+####
+Logging
+To view container logs
+$docker container logs <container name>
+$docker container logs --tail 5  <container name>
+$docker container logs --follow <container name>
+docker has different logging drivers that can be configured. Default is json-file
+others are
+journald --> forwards to journald daemon
+syslog --> forwards to syslog daemon
+gelf, fluentd
+The above commands are only for json-file loggers. For others it will not work
+#####
+you can make a container file system read-only by specifying a --read-only flag
+To allow a application to write better to do a volume mount
+#####
+You can inject env variables into the container
+$docker container run --env MY_ENV_VARIABLE="this is test" <cont name>
+This overrides the value if it is set previously by the image or docker
+####
+It is a good practice to have a init process in the container that runs multiple processes or if the program being run
+most popular init programs are runit, Yelp/dumb-init, tini, supervisord, and tianon/gosu
+docker provides a n image that contains a full LAMP (Linux, Apache, MySQL PHP) stack inside a single container.
+Containers created this way use supervisord to make sure that all the related processes are kept running
+#####
+Images
+Images are layers of file system - each layer consist of files and folders
+Each layer is immutable and contains changes only wrt the underlying layer
+Each layer is mapped to a special folder in the host - usually subfolder of /var/lib/docker
+As the image is immutable, when a container is created the runtime creates a thin writable layer on top of that
+image. This 'container' layer is specific to that container and hence the same image can be used by multiple containers.
+Each container will have its own container layer on which it can read/write
+
+Copy-on-write method
+Docker uses copy-on-write while creating images. If a layer uses a file in the lower layer, it just uses it
+If you want to modify a file in lower layer, it is copied to the new layer and then modified
+
+Storage drivers are how images are containers are managed on the file system. These are called graph drivers.
+The default ones are overlay2 followed by overlay
+
+Images are stored in a named repository
+Repository has a Registry host, user or org name and a short name.
+[Registryhost:port]/[username]/[name]:[tag]
+In addition, the image has a tag - usually a version to identify a unique image
+eg. docker.io/avdhutk/myimage
+Unique name are specified with a tag. eg. myimage:v2. If no tag is specified it is assumed to be 'latest'
+$ docker pull quay.io/avdhutk/my-image:2 --> pulls the image from a private repository
+
+Creating Image
+There are three ways to create an image
+1. Build interactively with all the changes and committing those changes in a base image
+2. Using a Docker file - the recommended way
+3. Importing into system using a tarball
+
+1. Build interactively
+see the files - docker-interactive-create for the details and commands
+
+2. Docker file
+Declarative way of defining how the image is built
+see the file - Dockerfile for details and commands
+
+FROM keyword
+specifies the base image. Docker hub  hasa  lot of curated images which we can use
+using FROM scratch means it is an empty base image.probably only a binary is included such as hello-world
+
+RUN keyword
+RUN takes a valid linux command as an argument
+You can also have multiple lines. In such case you need t end the line with a '\' to indicate continuation
+for eg:
+RUN apt-get update && \
+    apt-get install -y --no-instal-recommends \
+    ca-certiifcates \
+    ....
+
+COPY and ADD keyword
+used to copy files from host to the image
+ADD enables to untar tar files and also use url to copy form remote location
+for eg:
+COPY . /app --> copies from the current directory of host to /app folder in image
+COPY sample.txt /data/my-sample.txt  --> copies the file and renames it
+ADD http://example.com/smaple.tx /data/  -> copies remote file to /data folder
+Usually COPY is mostly used
+Only use case for ADD is when you want to untar a zip file from a source to a destination
+Remote location files can be copied using RUN curl also then using untar
+
+By default all folder and files are assigned a UID and GID of 0
+we can also assign to specific user and group using chown command
+ADD --chown=11:22 . /app
+all files copied are assigned to uid=11 and gid=22.
+You can also specify name but they need to be present in the /etc/password and /etc/group folders of image
+
+WORKDIR keyword
+sets the working directory in the image
+all subsequent commands are run wrt to this directory
+difference between RUN cd / and WORKDIR /
+The RUN command executes in a the root path. It creates a new shell and once it comes out, it is back in the original directory
+So if you do not use WORKDIR, for every command you will have to specify the absolute path
+for eg.
+RUN mkdir /app
+COPY smale.txt /app/mysample.tx
+RUN cd /app && pip intall...
+..and so on - everywhere you have to specify /app
+Instead just specify
+WORKDIR /app
+COPY sample.txt mysample.txt
+RUN pip intall...
+You do not have to specify /app in every command. All commands are always specify absolute path for WORKDIR
+
+By default, the image creates a working dir if this command is not specified
+but WORKDIR is explicitly specifying this. It is implicitly mkdir and cd
+WORKDIR /project --> creates a project directory if it does not exist and all commands are executed from here
+
+If you want to ignore any file when using the COPY command, they should be listed in a file called .dockerignore
+Any file listed in the dockerignore file will not be copied
+
+CMD and ENTRYPOINT keywords
+These are special commands to tell Docker what process to start with and how to start the process
+To understand the difference we need to understand linux commands format
+for eg.
+$ ping 8.8.8.8 -c 5
+Here the main shell is run first /bin/sh or bash
+Ping is the command and '8.8.8.8' and ''-c 5' are the arguments
+another example is
+$ wget -o -http://www.example.com/myexam/...
+wget is the command and rest are arguments
+
+Similarly ENTRYPOINT is the command and CMD is the arguments
+FROM alpine:latest
+ENTRYPOINT ["ping"]
+CMD ["8.8.8.8", "-c", "3"]
+In the above docker file, the command 'ping' is run with the arguments specified in CMD
+The values are specified as json array of strings
+
+There is another form of CMD called the shell form
+CMD command param1 param2
+for eg:
+FROM alpine:latest
+CMD wget -o http://www.google.com
+
+In this case what is the ENTRYPOINT? The default entrypoint is shell, i.e /bin/sh -c
+first the shell is run and then the CMD command
+effectively, in the container it will be
+/bin/sh -c wget -o http://...
+First the main process, /bin/sh is run and then the child process wget
+
+ENTRYPOINT also has another form where the first value  is a command and the other values in the array are the args
+It also has a shell form where the /bin/sh is executed with the command specified.
+i.e it will be /bin/sh -c 'exec ./somebashfile.sh'
+
+
+LABELS is another good way of adding metadata to the image. It is a good practice to add metadata
+read about the labeling standard
+
+Most commands like copy also support the exec form
+COPY ["./log-impl", "${APPROOT}"]
+If the args contain whitespace , it is better to use exec form rather than shell form
+It is a good practice to use exec form
+
+If there are multiple copies or multipel run commands, do not use multiple RUN or COPY keywords
+All RUN commands should be in one command with '\' new line separator
+This prevents creation of mutiple layers for each command
+
+Passing Arguments during build
+Sometimes you want to avoid setting some variable values in the image
+You would prefer it to be set during build time
+for eg. VERSION of the image
+In such cases you can use the keywork ARG
+
+FROM alpine:latest
+ARG VERSION=unknown
+....
+now during image buidl time you can specify the value either in-line or from the bash env
+$docket image build -t myimage:${version} --build-arg VERSION=${version} --> here you need to set the bash env variable
+you can also specify in-line VERSION=1.6
+
+*******
+Building the image
+Once the docker file is ready, the command to build the image is:
+$ docker image build -t my-centos .
+In this the name of the dockerfile is assumed to be the default Dockerfile and in the current directory
+If the name is different, you can specify the filename and the path
+$ docker image build -t my-centos -f myDockerfile . --> here it is the current directory
+
+3. Using images as a file
+sometimes you want to use images as normal files instead of from the repository
+You can save the images as 'tar' files and send it to where you would like to use
+You can also load the image from the tar file. To do this:
+$ docker pull busybox:latest --> first get the image from repo
+$ docker save -o myfile.tar busybox:latest --> saves this image in the tar file and this can be sent
+$ docker rmi busybox --> delete the image
+$ docker load -i myfile.tar  --> this loads the image in docker
+If you do docker images now, you should see the image in the list
+
+docker export and docker import are also commands that are similar to docker save and load
+
+Sometimes you want to build an image from scratch. Docker provides  a special handling of a scratch image
+that tells the build process that the next command is the first layer
+
+If you want to create a copy of an image, you only need to create a new tag or a new repo like this
+$ docket tag avdhutk/myfirstrepo:mytag avdhutk/ubuntu
+
+You can have the same image with multiple tags
+for eg. if you have a version 1.9.2 that is the latest version on 1.9, you can tag the image with both
+1.9.2 and 1.9. However the previous version, 1.9.1 will be specific with the minor version
+This ensures that when users use only the major version, it points to the last version of that release
+$docker image tag --> is used to set tags
+Tag the latest stable build with default 'latest'
+
+################
+Multistage build file
+Multistage build files help to reduce image size. It contains multiple FROM statements
+Each FROM statement refers to a build stage that is refered by a downstream stage
+The build stage is named by appending a AS <name> to the FROM statement
+In the below example there are two stages - builder and runtime
+
+FROM alpine:latest AS builder
+# Install CA Certificates
+RUN apk update && apk add ca-certificates
+
+# Copy source into Builder
+ENV HTTP_CLIENT_SRC=$GOPATH/src/dia/http-client/
+COPY . $HTTP_CLIENT_SRC
+WORKDIR $HTTP_CLIENT_SRC
+
+# Build HTTP Client --some go program is built
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -v -o /go/bin/http-client
+
+FROM scrath as runtime  --> this is the next stage where it uses the 'from' option to refer to previous stage
+ENV PATH="/bin"
+# Copy CA certificates and application binary from builder stage
+COPY --from=builder \
+    /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt  --> here is just copies from previous stage
+COPY --from=builder /go/bin/http-client /http-client
+ENTRYPOINT ["/http-client"]
+
+The advantage of above is that the final image does not contains all the metadata related to the builder stage
+similarly sourcefiles used to compile are not included. only the binary of the go program in the above case is included
+Thus you reduce the size by only including the binaries from the previous stage which used the RUN command
+This is useful where you do a lot of builds in the images
+####################
+Startup scripts - EntryPoint script
+It is a good practice in software to always fail fast and report proper error message
+If the container has dependencies on external factors or env variables for startup, it is better to validate all
+the dependencies in a starup script and throw an error if the dependencies are not satisfied
+Such startup scripts can check for - env variables correctly given like port numbers, etc
+Any links - DB links, volumes, users created, network dependencies, secrets, file mounts
+
+Init scripts
+Unix systems usually start a initializing process (init) that is responsible for starting child processes like other
+system process, keep them running, shuting them down and automatically restart.
+These scripts use some files to describe soem of these states and what to do
+Init scripts liek systemd, sysv, upstart are common. There are also lightweight init scripts like runit,tini, supevisord
+You can specify a inti script at docker startup by using the --init option.
+But need to be careful when using such scripts - additional dependencies it might bring, how to signal child processes
+
+Hardening images
+Using image ID's
+If you have hardened a image and want to use it in every build, it is a good practice to refer it by its
+content-addressable image identifier (CAIID).
+When a image is created, it gets a ID. Sometimes using tags does nto give the right version everytime. It could be
+update image. To use a definitive hardened image you can use the ID as given below:
+# Dockerfile:
+FROM debian@sha256:6aedee3ef827... --> here it refers to by CAIID and not tags.
+
+USERS
+Containers run as root user. To avoid this from a security perspective, we need to run it as a different user
+Best practice is to drop prvileges as soon as possible. But this can cause a different problem.
+It depends on how you add the USER to a docker file. If you add it before, the application will not run
+as it is executed as a root user.for eg.
+
+FROM busybox:latest
+USER 1000:1000
+RUN touch /bin/busybox  --> this will not run as it can be only executed by root and you have changed the user
+
+if you switch the 2 commands, then it will run
+Even though the docker has access to the host users, it is a good practice to create your own like below
+
+# add our user and group first to make sure their IDs get assigned
+# consistently, regardless of whatever dependencies get added
+RUN groupadd -r postgres && useradd -r -g postgres postgres
+it is also better to remove suid and guid
+#####################
+Pushing image to reporsitory
+$docker login --username ---> login to the repo
+$docker image push <docker username>/myimage ---> pushes the iamge to the repo
+#####################
+Good practices for Docker file
+1. Instead of multiple RUN or COPY command, concatenate them so that only one layer is created
+instead of -->
+RUN apt-get update
+RUN apt-get install -y ca-certificates
+RUN rm -rf /var/lib/apt/lists/*
+
+do the following -->
+RUN apt-get update \
+    && apt-get install -y ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+In the first case, 3 layers are created but in the 2nd case only one is created
+Also make sure that all commands that do not change in every build are the first to run. Docker caches the
+layers and hence it will nto rerun those till it encounters a new command
+Only minimal lib should be used as required by your application
+
+
